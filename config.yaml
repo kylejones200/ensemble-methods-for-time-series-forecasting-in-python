@@ -1,0 +1,17 @@
+data:
+  input_file: "/Users/kylejonespatricia/time_series/data/morocco_daily_total_load.csv"
+  date_col: "date"
+  value_col: "value"
+  freq: "D"
+
+model:
+  horizon: 14
+  n_splits: 5
+  input_chunk_length: 60
+  output_chunk_length: 14
+  n_epochs: 20
+
+output:
+  tufte_plot: "eia_nbeats_last_fold.png"
+  output_dir: "outputs"
+
