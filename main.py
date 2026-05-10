@@ -154,7 +154,7 @@ def rolling_origin_nbeats(
     return mean_mae, last_true, last_pred
 
 
-def plot_nbeats_forecast(series: TimeSeries, config: Config, last_forecast: TimeSeries) -> None:
+def plot_nbeats_forecast(series: TimeSeries, config: Config, last_forecast: TimeSeries, plot: bool = False) -> None:
     """Plot N-BEATS forecast."""
     history_end = pd.Timestamp("2024-12-01")
     forecast_start = pd.Timestamp("2025-01-01")
@@ -171,26 +171,27 @@ def plot_nbeats_forecast(series: TimeSeries, config: Config, last_forecast: Time
     forecast_scaled = model.predict(config.horizon)
     forecast = scaler.inverse_transform(forecast_scaled)
     
-    fig, ax = plt.subplots(figsize=(10, 5))
-    ax.plot(history.to_series().index, history.to_series().values, color="#555555", lw=1.5, label="History")
-    ax.axvline(forecast_start, color="#777777", linestyle="--", lw=1)
+    if plot:
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.plot(history.to_series().index, history.to_series().values, color="#555555", lw=1.5, label="History")
+        ax.axvline(forecast_start, color="#777777", linestyle="--", lw=1)
     
-    if len(actual) > 0:
-        ax.plot(actual.to_series().index, actual.to_series().values, color="#1f77b4", lw=1.8, label="Actual")
+        if len(actual) > 0:
+            ax.plot(actual.to_series().index, actual.to_series().values, color="#1f77b4", lw=1.8, label="Actual")
     
-    ax.plot(forecast.to_series().index, forecast.to_series().values, color="red", lw=2.0, label="N-BEATS Forecast")
+        ax.plot(forecast.to_series().index, forecast.to_series().values, color="red", lw=2.0, label="N-BEATS Forecast")
     
-    ax.set_title("N-BEATS Forecast")
-    ax.set_xlabel("Date")
-    ax.set_ylabel("Value")
-    ax.legend(loc="best")
-    ax.grid(True, alpha=0.3)
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
+        ax.set_title("N-BEATS Forecast")
+        ax.set_xlabel("Date")
+        ax.set_ylabel("Value")
+        ax.legend(loc="best")
+        ax.grid(True, alpha=0.3)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
     
-    fig.tight_layout()
-    save_plot(fig, config.output_plot, dpi=300)
-    plt.close(fig)
+        fig.tight_layout()
+        save_plot(fig, config.output_plot, dpi=300)
+        plt.close(fig)
     logger.info(f" N-BEATS plot saved -> {config.output_plot}")
 
 
