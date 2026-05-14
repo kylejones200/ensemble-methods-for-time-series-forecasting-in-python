@@ -84,19 +84,19 @@ plt.title("Stacking Ensemble") plt.xlabel("Time") plt.ylabel("Value") plt.legend
 
 ## Practical Considerations
 
-- **Feature Engineering:** Lag features, rolling averages, and seasonal decomposition are features we need to use for effective modeling.
+- Feature Engineering: Lag features, rolling averages, and seasonal decomposition are features we need to use for effective modeling.
 
-- **Data Size:** Ensemble methods, especially stacking, may require more data to avoid overfitting.
+- Data Size: Ensemble methods, especially stacking, may require more data to avoid overfitting.
 
-- **Computational Cost:** Boosting and stacking can be computationally intensive. Hyperparameters can help us balance performance and efficiency.
+- Computational Cost: Boosting and stacking can be computationally intensive. Hyperparameters can help us balance performance and efficiency.
 
-- **Temporal Dependencies:** We need to maintain the temporal order during train-test splits to avoid data leakage.
+- Temporal Dependencies: We need to maintain the temporal order during train-test splits to avoid data leakage.
 
 Bagging, boosting, and stacking can help improve time series forecasting. The goal is to get the benefits from each model to help reduce variance, correct bias, and capture complex patterns. Bagging helps reducing overfitting, boosting helps refining predictions, and stacking offers the flexibility to combine the best of multiple algorithms.
 
 ## Key Takeaways
 
-- **Feature Engineering:** Lag features, rolling averages, and seasonal decomposition are features we need to use for effective modeling.
-- **Data Size:** Ensemble methods, especially stacking, may require more data to avoid overfitting.
-- **Computational Cost:** Boosting and stacking can be computationally intensive. Hyperparameters can help us balance performance and efficiency.
-- **Temporal Dependencies:** We need to maintain the temporal order during train-test splits to avoid data leakage.
+- Feature Engineering: Lag features, rolling averages, and seasonal decomposition are features we need to use for effective modeling.
+- Data Size: Ensemble methods, especially stacking, may require more data to avoid overfitting.
+- Computational Cost: Boosting and stacking can be computationally intensive. Hyperparameters can help us balance performance and efficiency.
+- Temporal Dependencies: We need to maintain the temporal order during train-test splits to avoid data leakage.
