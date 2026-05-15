@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import sys
 import time
 from pathlib import Path
 
@@ -16,7 +15,6 @@ logger = logging.getLogger(__name__)
 # Add src to path
 
 from dataclasses import dataclass
-from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -26,7 +24,6 @@ import pandas as pd
 from src import (
     load_config,
     ensure_output_dir,
-    get_output_dir,
     save_plot,
 )
 from src.run_logger import append_run_log, utc_now_iso
@@ -113,7 +110,7 @@ def build_model(config: Config) -> NBEATSModel:
 
 def rolling_origin_nbeats(
     series: TimeSeries, config: Config
-) -> Tuple[float, TimeSeries, TimeSeries]:
+) -> tuple[float, TimeSeries, TimeSeries]:
     """Rolling origin evaluation for N-BEATS."""
     values = series.to_series()
     idx = np.arange(len(values))
