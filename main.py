@@ -3,13 +3,12 @@
 
 from __future__ import annotations
 
+import logging
 import time
 from pathlib import Path
 
-import logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 # Add src to path
@@ -19,25 +18,25 @@ from dataclasses import dataclass
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
-# Import consolidated utilities (signalplot already applied in src/__init__.py)
-from src import (
-    load_config,
-    ensure_output_dir,
-    save_plot,
-)
-from src.run_logger import append_run_log, utc_now_iso
-
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
 from darts.models import NBEATSModel
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import TimeSeriesSplit
 
+# Import consolidated utilities (signalplot already applied in src/__init__.py)
+from src import (
+    ensure_output_dir,
+    load_config,
+    save_plot,
+)
+from src.run_logger import append_run_log, utc_now_iso
+
 
 @dataclass
 class Config:
     """Configuration dataclass for this template."""
+
     data_path: Path
     date_col: str
     value_col: str
@@ -55,8 +54,10 @@ def parse_config(config_dict: dict, script_dir: Path) -> Config:
     """Parse config dictionary into Config dataclass."""
     repo_root = script_dir.parent
     data_path = repo_root / "data" / config_dict["data"]["input_file"]
-    output_dir = ensure_output_dir(Path(script_dir) / config_dict["output"]["output_dir"])
-    
+    output_dir = ensure_output_dir(
+        Path(script_dir) / config_dict["output"]["output_dir"]
+    )
+
     return Config(
         data_path=data_path,
         date_col=config_dict["data"]["date_col"],
@@ -76,11 +77,11 @@ def load_series(config: Config) -> TimeSeries:
     """Load time series into Darts TimeSeries format."""
     if not config.data_path.exists():
         raise FileNotFoundError(f"Input CSV not found at {config.data_path}")
-    
+
     df = pd.read_csv(config.data_path, header=0)
     if config.date_col not in df.columns or config.value_col not in df.columns:
         raise ValueError("Specified columns not present in CSV")
-    
+
     df[config.date_col] = pd.to_datetime(df[config.date_col], errors="coerce")
     df = df.dropna(subset=[config.date_col, config.value_col])
     df = df.sort_values(config.date_col)
@@ -118,65 +119,85 @@ def rolling_origin_nbeats(
     maes = []
     last_true = None
     last_pred = None
-    
+
     scaler = Scaler()
     series_scaled = scaler.fit_transform(series)
-    
+
     for train_idx, _ in splitter.split(idx):
         end_idx = train_idx[-1]
         train_series_scaled = series_scaled[: end_idx + 1]
         future_series = series[end_idx + 1 : end_idx + 1 + config.horizon]
-        
+
         if len(future_series) < config.horizon:
             continue
-        
+
         model = build_model(config)
         model.fit(train_series_scaled)
-        
+
         forecast_scaled = model.predict(config.horizon)
         forecast = scaler.inverse_transform(forecast_scaled)
-        
+
         forecast_series = forecast.to_series()
         actual_series = future_series.to_series()
-        
+
         mae = mean_absolute_error(actual_series.values, forecast_series.values)
         pd.concat([maes, mae])
-        
+
         last_true = future_series
         last_pred = forecast
-    
+
     mean_mae = float(np.mean(maes)) if maes else float("nan")
     logger.info(f"N-BEATS rolling-origin MAE: {mean_mae:.3f}")
     return mean_mae, last_true, last_pred
 
 
-def plot_nbeats_forecast(series: TimeSeries, config: Config, last_forecast: TimeSeries, plot: bool = False) -> None:
+def plot_nbeats_forecast(
+    series: TimeSeries, config: Config, last_forecast: TimeSeries, plot: bool = False
+) -> None:
     """Plot N-BEATS forecast."""
     history_end = pd.Timestamp("2024-12-01")
     forecast_start = pd.Timestamp("2025-01-01")
-    
+
     history = series[:history_end]
     actual = series[forecast_start:]
-    
+
     scaler = Scaler()
     series_scaled = scaler.fit_transform(series[:history_end])
-    
+
     model = build_model(config)
     model.fit(series_scaled)
-    
+
     forecast_scaled = model.predict(config.horizon)
     forecast = scaler.inverse_transform(forecast_scaled)
-    
+
     if plot:
         fig, ax = plt.subplots(figsize=(10, 5))
-        ax.plot(history.to_series().index, history.to_series().values, color="#555555", lw=1.5, label="History")
+        ax.plot(
+            history.to_series().index,
+            history.to_series().values,
+            color="#555555",
+            lw=1.5,
+            label="History",
+        )
         ax.axvline(forecast_start, color="#777777", linestyle="--", lw=1)
-    
+
         if len(actual) > 0:
-            ax.plot(actual.to_series().index, actual.to_series().values, color="#1f77b4", lw=1.8, label="Actual")
-    
-        ax.plot(forecast.to_series().index, forecast.to_series().values, color="red", lw=2.0, label="N-BEATS Forecast")
-    
+            ax.plot(
+                actual.to_series().index,
+                actual.to_series().values,
+                color="#1f77b4",
+                lw=1.8,
+                label="Actual",
+            )
+
+        ax.plot(
+            forecast.to_series().index,
+            forecast.to_series().values,
+            color="red",
+            lw=2.0,
+            label="N-BEATS Forecast",
+        )
+
         ax.set_title("N-BEATS Forecast")
         ax.set_xlabel("Date")
         ax.set_ylabel("Value")
@@ -184,7 +205,7 @@ def plot_nbeats_forecast(series: TimeSeries, config: Config, last_forecast: Time
         ax.grid(True, alpha=0.3)
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
-    
+
         fig.tight_layout()
         save_plot(fig, config.output_plot, dpi=300)
         plt.close(fig)
