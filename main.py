@@ -141,7 +141,7 @@ def rolling_origin_nbeats(
         actual_series = future_series.to_series()
 
         mae = mean_absolute_error(actual_series.values, forecast_series.values)
-        pd.concat([maes, mae])
+        maes.append(mae)
 
         last_true = future_series
         last_pred = forecast
