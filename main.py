@@ -5,15 +5,8 @@ from __future__ import annotations
 
 import logging
 import time
-from pathlib import Path
-
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
-# Add src to path
-
 from dataclasses import dataclass
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -23,14 +16,21 @@ from darts.dataprocessing.transformers import Scaler
 from darts.models import NBEATSModel
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import TimeSeriesSplit
+from src.run_logger import append_run_log, utc_now_iso
 
-# Import consolidated utilities (signalplot already applied in src/__init__.py)
 from src import (
     ensure_output_dir,
     load_config,
     save_plot,
 )
-from src.run_logger import append_run_log, utc_now_iso
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+# Add src to path
+
+
+
+# Import consolidated utilities (signalplot already applied in src/__init__.py)
 
 
 @dataclass
@@ -54,10 +54,7 @@ def parse_config(config_dict: dict, script_dir: Path) -> Config:
     """Parse config dictionary into Config dataclass."""
     repo_root = script_dir.parent
     data_path = repo_root / "data" / config_dict["data"]["input_file"]
-    output_dir = ensure_output_dir(
-        Path(script_dir) / config_dict["output"]["output_dir"]
-    )
-
+    output_dir = ensure_output_dir(Path(script_dir) / config_dict["output"]["output_dir"])
     return Config(
         data_path=data_path,
         date_col=config_dict["data"]["date_col"],
@@ -119,30 +116,23 @@ def rolling_origin_nbeats(
     maes = []
     last_true = None
     last_pred = None
-
     scaler = Scaler()
     series_scaled = scaler.fit_transform(series)
-
     for train_idx, _ in splitter.split(idx):
         end_idx = train_idx[-1]
         train_series_scaled = series_scaled[: end_idx + 1]
         future_series = series[end_idx + 1 : end_idx + 1 + config.horizon]
-
         if len(future_series) < config.horizon:
             continue
 
         model = build_model(config)
         model.fit(train_series_scaled)
-
         forecast_scaled = model.predict(config.horizon)
         forecast = scaler.inverse_transform(forecast_scaled)
-
         forecast_series = forecast.to_series()
         actual_series = future_series.to_series()
-
         mae = mean_absolute_error(actual_series.values, forecast_series.values)
         maes.append(mae)
-
         last_true = future_series
         last_pred = forecast
 
@@ -157,19 +147,14 @@ def plot_nbeats_forecast(
     """Plot N-BEATS forecast."""
     history_end = pd.Timestamp("2024-12-01")
     forecast_start = pd.Timestamp("2025-01-01")
-
     history = series[:history_end]
     actual = series[forecast_start:]
-
     scaler = Scaler()
     series_scaled = scaler.fit_transform(series[:history_end])
-
     model = build_model(config)
     model.fit(series_scaled)
-
     forecast_scaled = model.predict(config.horizon)
     forecast = scaler.inverse_transform(forecast_scaled)
-
     if plot:
         fig, ax = plt.subplots(figsize=(10, 5))
         ax.plot(
@@ -180,7 +165,6 @@ def plot_nbeats_forecast(
             label="History",
         )
         ax.axvline(forecast_start, color="#777777", linestyle="--", lw=1)
-
         if len(actual) > 0:
             ax.plot(
                 actual.to_series().index,
@@ -197,7 +181,6 @@ def plot_nbeats_forecast(
             lw=2.0,
             label="N-BEATS Forecast",
         )
-
         ax.set_title("N-BEATS Forecast")
         ax.set_xlabel("Date")
         ax.set_ylabel("Value")
@@ -205,9 +188,9 @@ def plot_nbeats_forecast(
         ax.grid(True, alpha=0.3)
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
-
         fig.tight_layout()
-        save_plot(fig, config.output_plot, dpi=300)
+        fig.savefig(config.output_plot, dpi=300, bbox_inches="tight")
+        plt.close(fig)
         plt.close(fig)
     logger.info(f" N-BEATS plot saved -> {config.output_plot}")
 
@@ -217,23 +200,18 @@ def main() -> None:
     script_dir = Path(__file__).parent
     started_at = utc_now_iso()
     t0 = time.perf_counter()
-
     status = "success"
     error_msg = None
     metrics_log: dict[str, float] = {}
-
     config_dict = load_config()
     config = parse_config(config_dict, script_dir)
-
     try:
         # Load series
         series = load_series(config)
         logger.info(f"Loaded {len(series)} data points")
-
         # Rolling origin evaluation
         mean_mae, last_true, last_pred = rolling_origin_nbeats(series, config)
         metrics_log["rolling_origin_mae"] = float(mean_mae)
-
         # Plot forecast
         if last_pred is not None:
             plot_nbeats_forecast(series, config, last_pred)
