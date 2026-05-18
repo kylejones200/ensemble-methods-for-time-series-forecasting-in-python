@@ -191,7 +191,6 @@ def plot_nbeats_forecast(
         fig.tight_layout()
         fig.savefig(config.output_plot, dpi=300, bbox_inches="tight")
         plt.close(fig)
-        plt.close(fig)
     logger.info(f" N-BEATS plot saved -> {config.output_plot}")
 
 
